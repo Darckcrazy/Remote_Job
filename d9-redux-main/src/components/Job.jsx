@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { Row, Col, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { addToFavorites, removeFromFavorites } from '../store/favoritesSlice';
+import { addToFavorites, removeFromFavorites } from '../store/actionCreators';
 
 const Job = ({ data }) => {
   const favorites = useSelector(state => state.favorites.companies);

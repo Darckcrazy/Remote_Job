@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { Container, Row, Col, Form, Button, Card, ButtonGroup, Badge } from "react-bootstrap";
+import { useSelector, useDispatch } from "react-redux";
+import { Container, Row, Col, Form, Button, Card, ButtonGroup, Badge, Alert } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import Job from "./Job";
+import { fetchJobs, clearJobs } from "../store/actionCreators";
 
 const MainSearch = () => {
   const [query, setQuery] = useState("");
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchType, setSearchType] = useState("search"); // "search" or "category"
   const [selectedCategory, setSelectedCategory] = useState("");
+
+  const dispatch = useDispatch();
+  const { jobs, loading, error } = useSelector(state => state.searchResults);
 
   const categories = [
     "writing", "design", "development", "marketing", "sales", 
@@ -18,8 +21,6 @@ const MainSearch = () => {
   const popularCategories = [
     "development", "design", "writing", "marketing", "data"
   ];
-
-  const baseEndpoint = "https://strive-benchmark.herokuapp.com/api/jobs";
 
   const handleChange = e => {
     setQuery(e.target.value);
@@ -44,27 +45,19 @@ const MainSearch = () => {
     if (searchType === "search" && !query.trim()) return;
     if (searchType === "category" && !selectedCategory) return;
 
-    setLoading(true);
-    try {
-      let url;
-      if (searchType === "search") {
-        url = `${baseEndpoint}?search=${query}&limit=20`;
-      } else {
-        url = `${baseEndpoint}?category=${selectedCategory}&limit=20`;
-      }
-      
-      const response = await fetch(url);
-      if (response.ok) {
-        const { data } = await response.json();
-        setJobs(data);
-      } else {
-        alert("Error fetching results");
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
+    const searchParams = {
+      query,
+      category: selectedCategory,
+      searchType
+    };
+
+    dispatch(fetchJobs(searchParams));
+  };
+
+  const handleClearResults = () => {
+    dispatch(clearJobs());
+    setQuery("");
+    setSelectedCategory("");
   };
 
   return (
@@ -156,6 +149,13 @@ const MainSearch = () => {
                 <p className="mt-3 text-muted">Searching for jobs...</p>
               </div>
             )}
+
+            {error && (
+              <Alert variant="danger" className="mt-3">
+                <Alert.Heading>❌ Error</Alert.Heading>
+                <p>{error}</p>
+              </Alert>
+            )}
           </div>
         </Col>
         
@@ -163,12 +163,21 @@ const MainSearch = () => {
           {jobs.length > 0 && (
             <Card className="mb-4">
               <Card.Body className="text-center">
-                <h3 className="text-primary mb-0">
-                  📋 Found {jobs.length} job{jobs.length !== 1 ? 's' : ''}
-                  {searchType === "category" && selectedCategory && (
-                    <span className="text-muted"> in {selectedCategory}</span>
-                  )}
-                </h3>
+                <div className="d-flex justify-content-between align-items-center">
+                  <h3 className="text-primary mb-0">
+                    📋 Found {jobs.length} job{jobs.length !== 1 ? 's' : ''}
+                    {searchType === "category" && selectedCategory && (
+                      <span className="text-muted"> in {selectedCategory}</span>
+                    )}
+                  </h3>
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm"
+                    onClick={handleClearResults}
+                  >
+                    🗑️ Clear Results
+                  </Button>
+                </div>
               </Card.Body>
             </Card>
           )}
@@ -177,7 +186,7 @@ const MainSearch = () => {
             <Job key={jobData._id} data={jobData} />
           ))}
           
-          {jobs.length === 0 && !loading && ((searchType === "search" && query) || (searchType === "category" && selectedCategory)) && (
+          {jobs.length === 0 && !loading && !error && ((searchType === "search" && query) || (searchType === "category" && selectedCategory)) && (
             <div className="empty-state">
               <div className="display-1 mb-3">🔍</div>
               <h3 className="mb-3">No jobs found</h3>

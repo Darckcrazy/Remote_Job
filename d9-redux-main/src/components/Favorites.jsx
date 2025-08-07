@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { Container, Row, Col, Button, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { removeFromFavorites } from '../store/favoritesSlice';
+import { removeFromFavorites } from '../store/actionCreators';
 
 const Favorites = () => {
   const favorites = useSelector(state => state.favorites.companies);
